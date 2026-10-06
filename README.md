@@ -77,36 +77,6 @@ of inactivity, so the first request after idle can take about a minute. The
 free API image omits the transformer dependency; install `requirements-ml.txt`
 for a local or paid deployment with the full model.
 
-### Deploy on Oracle Cloud Always Free
-
-`docker-compose.oracle.yml` runs the API and frontend on one VM and connects
-the API to Atlas; it does not start a local MongoDB container. It uses the
-hashing embedder to match the vectors currently stored in Atlas.
-
-1. In OCI, create an Ubuntu Ampere A1 VM using no more than 2 OCPUs and 12 GB
-  RAM, within the Always Free allocation. Add your SSH public key and assign a
-  public IPv4 address. Always Free capacity can vary by region.
-2. In the VM's network security list, allow inbound TCP 22 only from your own
-  IP address, and TCP 80 for the demo site. Add the VM's public IPv4 address
-  to the Atlas project's Network Access allowlist.
-3. Install Docker Engine and the Compose plugin using the
-  [official Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/).
-  Generate a read-only GitHub deploy key on the VM, then add its public key
-  under the private repository's **Settings > Deploy keys**.
-4. Clone the private repository over SSH, create the root `.env` from
-  `.env.oracle.example` (merge settings if `.env` already exists), and replace
-  the Atlas URI placeholders. Never commit that completed `.env` file.
-5. From the repository root, start the app:
-
-  ```bash
-  docker compose -f docker-compose.oracle.yml up -d --build
-  ```
-
-Open `http://<VM-public-IP>` to view the app. The API is only reachable through
-the frontend proxy. This direct-IP demo uses HTTP; add a domain and HTTPS
-reverse proxy before collecting credentials or using it beyond a faculty demo.
-For updates, pull the new `main` commit on the VM and rerun the Compose command.
-
 ### Local development
 
 Requires Python 3.13, Node 22, and a MongoDB reachable on `RL_MONGODB_URI`
