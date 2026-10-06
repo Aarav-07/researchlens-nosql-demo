@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: researchlens-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./backend/Dockerfile.free
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: RL_MONGODB_URI
+        sync: false
+      - key: RL_MONGODB_DB
+        value: researchlens
+      - key: RL_SEARCH_BACKEND
+        value: atlas
+      - key: RL_EMBEDDING_BACKEND
+        value: hashing
+      - key: RL_LIVE_SEARCH_ENABLED
+        value: "true"
+      - key: RL_CORS_ORIGINS
+        value: "*"
+
+  - type: web
+    name: researchlens-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          type: web
+          name: researchlens-api
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

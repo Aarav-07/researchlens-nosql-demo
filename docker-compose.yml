@@ -1,0 +1,63 @@
+# Full stack: MongoDB, the API, and the web client behind nginx.
+#
+#   cp .env.example .env      # optional - every value below has a default
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# The API is not published on the host by default: the browser reaches it
+# same-origin through the web container's /api proxy. Uncomment its ports block
+# if you want to call the API directly.
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  api:
+    build:
+      context: ./backend
+      args:
+        EMBEDDING_MODEL: ${RL_EMBEDDING_MODEL_NAME:-sentence-transformers/all-MiniLM-L6-v2}
+    restart: unless-stopped
+    # Compose normally reads .env only for variable interpolation. Supplying it
+    # here also forwards the optional API tuning values to the container.
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      RL_MONGODB_URI: mongodb://mongo:27017
+      RL_MONGODB_DB: ${RL_MONGODB_DB:-researchlens}
+      RL_LOG_LEVEL: ${RL_LOG_LEVEL:-INFO}
+      # Same-origin through nginx, so no browser origin needs allowing.
+      RL_CORS_ORIGINS: ${RL_CORS_ORIGINS:-}
+      # Fail loudly rather than silently downgrading to the hashing embedder,
+      # which would write vectors in a different space to the rest of the corpus.
+      RL_EMBEDDING_BACKEND: ${RL_EMBEDDING_BACKEND:-sentence_transformers}
+      RL_EMBEDDING_MODEL_NAME: ${RL_EMBEDDING_MODEL_NAME:-sentence-transformers/all-MiniLM-L6-v2}
+      RL_OPENALEX_MAILTO: ${RL_OPENALEX_MAILTO:-}
+      RL_LIVE_SEARCH_ENABLED: ${RL_LIVE_SEARCH_ENABLED:-true}
+    # ports:
+    #   - "8000:8000"
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+
+volumes:
+  mongo-data:

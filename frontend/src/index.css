@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+@import "@fontsource-variable/archivo/index.css";
+@import "@fontsource-variable/newsreader/index.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* ---------------------------------------------------------------------------
+   Editorial press system.
+
+   Palette, type and shape follow the sihbuddy.in language: a bone page with
+   paper surfaces, near-black ink, ultramarine as the single accent, and four
+   semantic inks reserved for meaning (never decoration).
+
+   Three typefaces, each with one job:
+     Archivo        headings, titles, buttons. Structure and voice.
+     Newsreader     abstracts and prose. Long reading.
+     IBM Plex Mono  labels, counters, scores. Uppercase, wide tracking.
+
+   Shape: square. Every corner is 0, every edge is a 1px rule, section breaks
+   are 2px ink rules. Nothing is rounded and nothing floats on a soft shadow.
+--------------------------------------------------------------------------- */
+:root {
+  /* Core */
+  --c-bone: 240 241 236; /* page */
+  --c-paper: 250 250 247; /* surfaces */
+  --c-ink: 20 23 28; /* text and hard rules */
+  --c-slate: 92 102 114; /* secondary text */
+  --c-rule: 210 213 205; /* hairlines */
+  --c-ultramarine: 34 51 214; /* the one accent */
+
+  /* Semantic inks: meaning only */
+  --c-moss: 31 107 78;
+  --c-ochre: 169 106 5;
+  --c-magenta: 192 22 107;
+  --c-rust: 163 34 25;
+
+  --bg: rgb(var(--c-bone));
+  --surface: rgb(var(--c-paper));
+  --surface-2: rgb(236 237 231);
+  --surface-3: rgb(226 228 220);
+  --border: rgb(var(--c-rule));
+  --border-strong: rgb(var(--c-ink));
+  --text: rgb(var(--c-ink));
+  --text-2: rgb(var(--c-slate));
+  --text-3: rgb(124 132 142);
+  --accent: rgb(var(--c-ultramarine));
+  --accent-hover: rgb(26 39 170);
+  --accent-text: rgb(var(--c-paper));
+  --accent-soft: rgb(var(--c-ultramarine) / 0.07);
+  --accent-line: rgb(var(--c-ultramarine) / 0.4);
+  --danger: rgb(var(--c-rust));
+  --danger-soft: rgb(var(--c-rust) / 0.07);
+  --positive: rgb(var(--c-moss));
+  --caution: rgb(var(--c-ochre));
+  --shadow-stamp: 2px 2px 0 rgb(var(--c-ink) / 0.1);
+
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-positive: var(--positive);
+  --color-caution: var(--caution);
+
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader Variable", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Prose reads in the serif; everything structural stays in Archivo. */
+.prose-serif {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* The recurring press label: small, uppercase, widely tracked mono. */
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Short accent rule that precedes a section label, as on the reference. */
+.rule-lead::before {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--accent);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-rule)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-slate) / 0.35);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@keyframes rl-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.rl-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--surface-3) 40%,
+    var(--surface-2) 80%
+  );
+  background-size: 200% 100%;
+  animation: rl-shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rl-skeleton {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
