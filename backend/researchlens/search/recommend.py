@@ -99,9 +99,13 @@ class RecommendationService:
             return RecommendationSet(query=query, took_ms=0, considered=0, groups=[])
 
         pool = self.settings.rec_candidate_pool
-        vector = self.embedder.encode_one(query)
-        index = get_vector_index(self.repo, self.embedder.name, self.settings)
-        semantic = {pid: score for pid, score in index.search(vector, pool)}
+        fallback = self.embedder.is_fallback
+        if fallback:
+            semantic = {}
+        else:
+            vector = self.embedder.encode_one(query)
+            index = get_vector_index(self.repo, self.embedder.name, self.settings)
+            semantic = {pid: score for pid, score in index.search(vector, pool)}
 
         keyword_raw = self.repo.text_search(query, pool)
         keyword = _min_max({pid: score for pid, score, _doc in keyword_raw})
@@ -173,9 +177,12 @@ class RecommendationService:
                     break
             if hits:
                 meta = GROUP_META[key]
+                description = meta["description"]
+                if key == "closest" and self.embedder.is_fallback:
+                    description = "Direct matches on your search terms."
                 groups.append(
                     RecommendationGroup(
-                        key=key, title=meta["title"], description=meta["description"], hits=hits
+                        key=key, title=meta["title"], description=description, hits=hits
                     )
                 )
 

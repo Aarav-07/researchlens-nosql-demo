@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from researchlens.config import get_settings
+from researchlens.config import Settings, get_settings
 from researchlens.documents import (
     RawPaper,
     compute_fingerprint,
@@ -97,6 +97,70 @@ def test_hashing_embedder_separates_unrelated_text():
     vectors = embedder.encode(["protein folding prediction", "monetary policy inflation"])
     similarity = float(vectors[0] @ vectors[1])
     assert similarity < 0.2
+
+
+def test_fallback_hybrid_search_uses_keyword_ranking():
+    from researchlens.search.service import SearchService
+
+    paper = {
+        "_id": "paper-1",
+        "title": "Photovoltaic cell efficiency",
+        "abstract": "A study of solar cell performance.",
+        "authors": [],
+        "topics": ["Photovoltaics"],
+        "published_date": datetime.now(timezone.utc),
+        "citation_count": 0,
+    }
+
+    class Repo:
+        def text_search(self, query, limit):
+            return [(paper["_id"], 1.0, paper)]
+
+    service = SearchService(
+        repo=Repo(),
+        embedder=HashingEmbedder(dim=64),
+        settings=Settings(search_backend="local", embedding_backend="hashing"),
+    )
+    service._log_query = lambda response: None
+
+    response = service.search("photovoltaic cell", mode="hybrid")
+
+    assert response.mode == "keyword"
+    assert [hit.paper["title"] for hit in response.hits] == [paper["title"]]
+    assert response.top_similarity == 0.0
+
+
+def test_fallback_recommendations_only_use_keyword_matches():
+    from researchlens.search.recommend import RecommendationService
+
+    paper = {
+        "_id": "paper-1",
+        "title": "Photovoltaic cell efficiency",
+        "abstract": "A study of solar cell performance.",
+        "authors": [],
+        "topics": ["Photovoltaics"],
+        "published_date": datetime.now(timezone.utc),
+        "citation_count": 0,
+    }
+
+    class Repo:
+        def text_search(self, query, limit):
+            return [(paper["_id"], 1.0, paper)]
+
+        def get_many(self, ids):
+            return {}
+
+    service = RecommendationService(
+        repo=Repo(),
+        embedder=HashingEmbedder(dim=64),
+        settings=Settings(search_backend="local", embedding_backend="hashing"),
+    )
+
+    recommendations = service.for_query("photovoltaic cell")
+
+    assert [group.key for group in recommendations.groups] == ["closest"]
+    assert recommendations.groups[0].hits[0].paper["title"] == paper["title"]
+    assert recommendations.groups[0].description == "Direct matches on your search terms."
 
 
 # ----------------------------------------------------------------------- scoring

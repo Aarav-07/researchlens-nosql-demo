@@ -58,6 +58,7 @@ export default function App() {
       api
         .discover(q, mode, { limit: 25, live: true, signal: controller.signal })
         .then((response) => {
+          setMode(response.search.mode);
           setResult(response);
           if (response.live_fetch) {
             api.health().then((health) => setCorpus(health.papers)).catch(() => undefined);

@@ -64,7 +64,10 @@ class DiscoveryService:
 
         live_report: dict[str, Any] | None = None
         if live and query.strip():
-            similarities = [h.similarity for h in response.hits] or [response.top_similarity]
+            if self.search_service.embedder.is_fallback and response.mode == "keyword":
+                similarities = [1.0] * len(response.hits)
+            else:
+                similarities = [h.similarity for h in response.hits] or [response.top_similarity]
             live_report = self.live.maybe_fetch(query, similarities)
             if live_report:
                 notes.append(

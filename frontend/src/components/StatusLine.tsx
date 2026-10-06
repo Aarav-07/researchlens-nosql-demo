@@ -23,10 +23,12 @@ export function StatusLine({
         <span>via {search.mode}</span>
       </span>
 
-      <span title="Raw cosine of the closest paper to your query, before ranking">
-        best match{" "}
-        <span className="tabular-nums text-ink">{search.top_similarity.toFixed(2)}</span>
-      </span>
+      {search.mode !== "keyword" || search.top_similarity > 0 ? (
+        <span title="Raw cosine of the closest paper to your query, before ranking">
+          best match{" "}
+          <span className="tabular-nums text-ink">{search.top_similarity.toFixed(2)}</span>
+        </span>
+      ) : null}
 
       {recommendations ? (
         <span>

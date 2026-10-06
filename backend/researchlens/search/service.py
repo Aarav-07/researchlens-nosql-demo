@@ -81,6 +81,10 @@ class SearchService:
         if not query:
             return SearchResponse(query=query, mode=mode, total=0, took_ms=0, hits=[])
 
+        fallback = self.embedder.is_fallback
+        if fallback and mode != "keyword":
+            mode = "keyword"
+
         if mode == "keyword":
             hits = self._keyword(query, limit)
         elif mode == "semantic":
@@ -90,7 +94,7 @@ class SearchService:
 
         # Measured on the whole corpus, not on the surviving hits, so a query
         # the corpus cannot answer still reports how far off the nearest paper is.
-        top_similarity = self._best_similarity(query)
+        top_similarity = 0.0 if fallback else self._best_similarity(query)
 
         took_ms = int((time.perf_counter() - started) * 1000)
         response = SearchResponse(
