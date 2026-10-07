@@ -30,7 +30,14 @@ from ..logging_conf import get_logger
 from ..ml.embeddings import Embedder, get_embedder
 from ..ml.vector_index import get_vector_index
 from ..repository import PaperRepository
-from .service import SearchHit, _citation_score, _min_max, _overlapping_terms, _recency_score
+from .service import (
+    SearchHit,
+    _citation_score,
+    _min_max,
+    _minimum_keyword_overlap,
+    _overlapping_terms,
+    _recency_score,
+)
 
 log = get_logger(__name__)
 
@@ -108,6 +115,12 @@ class RecommendationService:
             semantic = {pid: score for pid, score in index.search(vector, pool)}
 
         keyword_raw = self.repo.text_search(query, pool)
+        if fallback:
+            minimum_overlap = _minimum_keyword_overlap(query)
+            keyword_raw = [
+                row for row in keyword_raw
+                if len(_overlapping_terms(query, row[2])) >= minimum_overlap
+            ]
         keyword = _min_max({pid: score for pid, score, _doc in keyword_raw})
 
         docs: dict[str, dict[str, Any]] = {pid: doc for pid, _s, doc in keyword_raw}

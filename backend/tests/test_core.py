@@ -163,6 +163,36 @@ def test_fallback_recommendations_only_use_keyword_matches():
     assert recommendations.groups[0].description == "Direct matches on your search terms."
 
 
+def test_fallback_search_requires_both_terms_for_two_word_queries():
+    from researchlens.search.service import SearchService
+
+    deepfake = {
+        "_id": "paper-1",
+        "title": "Media Forensics and DeepFakes: An Overview",
+        "abstract": "A survey of media forensics and manipulated content.",
+        "authors": [],
+        "topics": ["Digital Media Forensic Detection"],
+        "published_date": datetime.now(timezone.utc),
+        "citation_count": 952,
+    }
+
+    class Repo:
+        def text_search(self, query, limit):
+            return [(deepfake["_id"], 1.0, deepfake)]
+
+    service = SearchService(
+        repo=Repo(),
+        embedder=HashingEmbedder(dim=64),
+        settings=Settings(search_backend="local", embedding_backend="hashing"),
+    )
+    service._log_query = lambda response: None
+
+    response = service.search("social media", mode="hybrid")
+
+    assert response.mode == "keyword"
+    assert response.hits == []
+
+
 # ----------------------------------------------------------------------- scoring
 
 

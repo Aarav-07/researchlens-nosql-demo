@@ -138,11 +138,19 @@ class SearchService:
     # ----------------------------------------------------------------- internals
 
     def _keyword(self, query: str, limit: int) -> list[SearchHit]:
+        fallback = self.embedder.is_fallback
+        candidate_limit = max(limit * 4, 40) if fallback else limit
         raw = (
-            self.repo.atlas_text_search(query, limit)
+            self.repo.atlas_text_search(query, candidate_limit)
             if is_atlas(self.settings)
-            else self.repo.text_search(query, limit)
+            else self.repo.text_search(query, candidate_limit)
         )
+        if fallback:
+            minimum_overlap = _minimum_keyword_overlap(query)
+            raw = [
+                row for row in raw
+                if len(_overlapping_terms(query, row[2])) >= minimum_overlap
+            ]
         if not raw:
             return []
         scores = {pid: score for pid, score, _ in raw}
@@ -155,7 +163,7 @@ class SearchService:
                 reason=_keyword_reason(query, doc),
             )
             for pid, _score, doc in raw
-        ]
+        ][:limit]
 
     def _best_similarity(self, query: str) -> float:
         """Highest raw cosine anywhere in the corpus for this query."""
@@ -302,6 +310,11 @@ def _overlapping_terms(query: str, doc: dict[str, Any]) -> list[str]:
     words = {w for w in query.lower().split() if len(w) > 3}
     haystack = f"{doc.get('title', '')} {doc.get('abstract', '')}".lower()
     return [w for w in words if w in haystack]
+
+
+def _minimum_keyword_overlap(query: str) -> int:
+    words = {word for word in query.lower().split() if len(word) > 3}
+    return min(2, len(words))
 
 
 def _keyword_reason(query: str, doc: dict[str, Any]) -> str:
